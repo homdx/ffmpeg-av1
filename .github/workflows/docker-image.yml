@@ -14,5 +14,7 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
-    - name: Build the Docker image
+    - name: Build the Debian Docker image
+      run: docker build . --file Dockefile.bullseye --tag my-image-name:$(date +%s)
+    - name: Build the Ubuntu Docker image
       run: docker build . --file Dockerfile.jammy --tag my-image-name:$(date +%s)
