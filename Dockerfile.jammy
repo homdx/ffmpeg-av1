@@ -1,0 +1,100 @@
+FROM ubuntu:22.04
+
+#Based from https://trac.ffmpeg.org/wiki/CompilationGuide/Ubuntu
+
+RUN apt-get update && apt-get upgrade -y && \
+  apt-get -y install \
+  autoconf \
+  automake \
+  build-essential \
+  cmake \
+  git-core \
+  libass-dev \
+  libfreetype6-dev \
+  libgnutls28-dev \
+  libmp3lame-dev \
+  libsdl2-dev \
+  libtool \
+  libva-dev \
+  libvdpau-dev \
+  libvorbis-dev \
+  libxcb1-dev \
+  libxcb-shm0-dev \
+  libxcb-xfixes0-dev \
+  meson \
+  ninja-build \
+  pkg-config \
+  texinfo \
+  wget \
+  yasm \
+  zlib1g-dev
+
+RUN apt-get install -y nasm libx264-dev libx265-dev libnuma-dev libvpx-dev libfdk-aac-dev libopus-dev
+
+RUN echo enable x11grab dependencies && apt-get install -y libsdl2-dev libva-dev libvdpau-dev libxcb1-dev libxcb-shm0-dev libxcb-xfixes0-dev && \
+    echo add missing dependencies && apt-get install libmfx-dev ocl-icd-opencl-dev libssl-dev -y
+
+RUN groupadd --gid 10000 builduser \
+  && useradd --uid 10000 --gid builduser --shell /bin/bash --create-home builduser
+
+USER builduser
+
+RUN mkdir -p ~/ffmpeg_sources ~/bin
+
+WORKDIR /home/builduser/ffmpeg_sources
+
+
+RUN echo will build with $(nproc) threads
+
+#libaom
+RUN echo libaom build && cd ~/ffmpeg_sources && \
+git -C aom pull 2> /dev/null || git clone --depth 1 https://aomedia.googlesource.com/aom && \
+mkdir -p aom_build && \
+cd aom_build && \
+PATH="$HOME/bin:$PATH" cmake -G "Unix Makefiles" -DCMAKE_INSTALL_PREFIX="$HOME/ffmpeg_build" -DENABLE_TESTS=OFF -DENABLE_NASM=on ../aom && \
+PATH="$HOME/bin:$PATH" make -j $(nproc) && \
+make install
+
+#libsvtav1
+RUN echo libsvtav1 build && cd ~/ffmpeg_sources && \
+git -C SVT-AV1 pull 2> /dev/null || git clone https://gitlab.com/AOMediaCodec/SVT-AV1.git && \
+mkdir -p SVT-AV1/build && \
+cd SVT-AV1/build && \
+PATH="$HOME/bin:$PATH" cmake -G "Unix Makefiles" -DCMAKE_INSTALL_PREFIX="$HOME/ffmpeg_build" -DCMAKE_BUILD_TYPE=Release -DBUILD_DEC=OFF -DBUILD_SHARED_LIBS=OFF .. && \
+PATH="$HOME/bin:$PATH" make -j $(nproc) && \
+make install
+
+#libdav1d
+RUN echo libdav1d build && cd ~/ffmpeg_sources && \
+git -C dav1d pull 2> /dev/null || git clone --depth 1 https://code.videolan.org/videolan/dav1d.git && \
+mkdir -p dav1d/build && \
+cd dav1d/build && \
+meson setup -Denable_tools=false -Denable_tests=false --default-library=static .. --prefix "$HOME/ffmpeg_build" --libdir="$HOME/ffmpeg_build/lib" && \
+ninja && \
+ninja install
+
+#libvmaf
+RUN echo libvmaf build && cd ~/ffmpeg_sources && \
+wget https://github.com/Netflix/vmaf/archive/v2.1.1.tar.gz && \
+tar xvf v2.1.1.tar.gz && \
+mkdir -p vmaf-2.1.1/libvmaf/build &&\
+cd vmaf-2.1.1/libvmaf/build && \
+meson setup -Denable_tests=false -Denable_docs=false --buildtype=release --default-library=static .. --prefix "$HOME/ffmpeg_build" --libdir="$HOME/ffmpeg_build/lib" && \
+ninja && \
+ninja install
+
+RUN cd ~/ffmpeg_sources && \
+wget -O ffmpeg-snapshot.tar.bz2 https://ffmpeg.org/releases/ffmpeg-snapshot.tar.bz2 && \
+tar xjvf ffmpeg-snapshot.tar.bz2 && \
+cd ffmpeg && \
+PATH="$HOME/bin:$PATH" PKG_CONFIG_PATH="$HOME/ffmpeg_build/lib/pkgconfig" ./configure \
+  --prefix="$HOME/ffmpeg_build" \
+  --pkg-config-flags="--static" \
+  --extra-cflags="-I$HOME/ffmpeg_build/include" \
+  --extra-ldflags="-L$HOME/ffmpeg_build/lib" \
+  --extra-libs="-lpthread -lm -lz -ldl"  \
+  --ld="g++" \
+  --bindir="$HOME/bin" \
+  --enable-libmfx --enable-vaapi --enable-opencl --disable-debug --enable-libvorbis --enable-libvpx --enable-libdrm --enable-gpl \
+ --cpu=native --enable-libfdk-aac --enable-libx264 --enable-libx265 --enable-openssl --enable-pic --enable-nonfree \
+--enable-libvmaf --prefix=$HOME/bin && make -j $(nproc) && make install && $HOME/bin/ffmpeg -version
