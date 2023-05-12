@@ -1,4 +1,4 @@
-FROM ubuntu:22.04
+FROM ubuntu:22.04 as builder
 
 #Based from https://trac.ffmpeg.org/wiki/CompilationGuide/Ubuntu
 
@@ -34,14 +34,14 @@ RUN apt-get install -y nasm libx264-dev libx265-dev libnuma-dev libvpx-dev libfd
 RUN echo enable x11grab dependencies && apt-get install -y libsdl2-dev libva-dev libvdpau-dev libxcb1-dev libxcb-shm0-dev libxcb-xfixes0-dev && \
     echo add missing dependencies && apt-get install libmfx-dev ocl-icd-opencl-dev libssl-dev -y
 
-RUN groupadd --gid 10000 builduser \
-  && useradd --uid 10000 --gid builduser --shell /bin/bash --create-home builduser
+RUN groupadd --gid 10000 homdx \
+  && useradd --uid 10000 --gid homdx --shell /bin/bash --create-home homdx
 
-USER builduser
+USER homdx
 
 RUN mkdir -p ~/ffmpeg_sources ~/bin
 
-WORKDIR /home/builduser/ffmpeg_sources
+WORKDIR /home/homdx/ffmpeg_sources
 
 
 RUN echo will build with $(nproc) threads
@@ -98,3 +98,11 @@ PATH="$HOME/bin:$PATH" PKG_CONFIG_PATH="$HOME/ffmpeg_build/lib/pkgconfig" ./conf
   --enable-libmfx --enable-vaapi --enable-opencl --disable-debug --enable-libvorbis --enable-libvpx --enable-libdrm --enable-gpl \
  --cpu=native --enable-libfdk-aac --enable-libx264 --enable-libx265 --enable-openssl --enable-pic --enable-nonfree \
 --enable-libvmaf --enable-libpulse --prefix=$HOME/bin && make -j $(nproc) && make install && $HOME/bin/ffmpeg -version
+
+FROM ubuntu:22.04
+
+COPY --from=builder /home/homdx/bin/ff* /usr/bin
+
+RUN apt update && apt install libgl1 libxcb-shape0 libasound2 libpulse0 libsdl2-2.0-0 libsndio7.0 libxv1 libva2 libmfx1 ocl-icd-libopencl1 libvpx7 libfdk-aac2 x264 x265 -y && ffmpeg -version
+
+ENTRYPOINT /usr/bin/ffmpeg
