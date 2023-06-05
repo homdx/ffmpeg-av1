@@ -83,6 +83,16 @@ meson setup -Denable_tests=false -Denable_docs=false --buildtype=release --defau
 ninja && \
 ninja install
 
+#libstab
+RUN echo libvmaf build && cd ~/ffmpeg_sources && \
+wget https://github.com/georgmartius/vid.stab/archive/refs/tags/v1.1.1.tar.gz && \
+tar -xvf v1.1.1.tar.gz && \
+cd vid.stab-1.1.1 && \
+mkdir -p vidstab_build && cd vidstab_build && \
+PATH="$HOME/bin:$PATH" cmake -G "Unix Makefiles" -DCMAKE_INSTALL_PREFIX="$HOME/ffmpeg_build"  -DCMAKE_BUILD_TYPE=Release -DBUILD_DEC=OFF -DBUILD_SHARED_LIBS=OFF .. && \
+PATH="$HOME/bin:$PATH" make -j $(nproc) && \
+make install
+
 RUN cd ~/ffmpeg_sources && \
 wget -O ffmpeg-snapshot.tar.bz2 https://ffmpeg.org/releases/ffmpeg-snapshot.tar.bz2 && \
 tar xjvf ffmpeg-snapshot.tar.bz2 && \
@@ -97,7 +107,8 @@ PATH="$HOME/bin:$PATH" PKG_CONFIG_PATH="$HOME/ffmpeg_build/lib/pkgconfig" ./conf
   --bindir="$HOME/bin" \
   --enable-libmfx --enable-vaapi --enable-opencl --disable-debug --enable-libvorbis --enable-libvpx --enable-libdrm --enable-gpl \
  --cpu=native --enable-libfdk-aac --enable-libx264 --enable-libx265 --enable-openssl --enable-pic --enable-nonfree \
---enable-libvmaf --enable-libpulse --prefix=$HOME/bin && make -j $(nproc) && make install && $HOME/bin/ffmpeg -version
+ --enable-libvmaf --enable-libpulse --enable-gpl --enable-libvidstab --enable-libfontconfig --enable-libfreetype \
+ --enable-libmp3lame --prefix=$HOME/bin && make -j $(nproc) && make install && $HOME/bin/ffmpeg -version
 
 #RUN echo 1 && dpkg -S /usr/lib/x86_64-linux-gnu/libvpx.so.6  | true
 
