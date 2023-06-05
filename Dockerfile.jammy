@@ -112,7 +112,7 @@ PATH="$HOME/bin:$PATH" PKG_CONFIG_PATH="$HOME/ffmpeg_build/lib/pkgconfig" ./conf
 
 FROM ubuntu:22.04
 
-COPY --from=builder /home/homdx/bin/ff* /usr/bin
+COPY --from=builder /home/homdx/bin /usr/bin
 
 RUN apt update && apt install libgl1 libxcb-shape0 libasound2 libpulse0 libsdl2-2.0-0 libsndio7.0 libxv1 libva2 libmfx1 ocl-icd-libopencl1 libvpx7 libfdk-aac2 x264 x265 -y && ffmpeg -version
 
