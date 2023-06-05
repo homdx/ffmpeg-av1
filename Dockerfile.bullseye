@@ -116,7 +116,7 @@ PATH="$HOME/bin:$PATH" PKG_CONFIG_PATH="$HOME/ffmpeg_build/lib/pkgconfig" ./conf
 
 FROM debian:11
 
-COPY --from=builder /home/homdx/bin/ff* /usr/bin
+COPY --from=builder /home/homdx/bin /usr/bin
 
 RUN apt update && apt install  libgl1 libxcb-shape0 libasound2 libpulse0 libsdl2-2.0-0 libsndio7.0 libxv1 libva2 ocl-icd-libopencl1 libmfx1:amd64 libvpx6 x264 x265 -y && \
     echo enable non free && sed -i -e's/ main/ main contrib non-free/g' /etc/apt/sources.list && apt update && apt install libfdk-aac2 -y && ffmpeg -version
