@@ -75,10 +75,10 @@ ninja install
 
 #libvmaf
 RUN echo libvmaf build && cd ~/ffmpeg_sources && \
-wget https://github.com/Netflix/vmaf/archive/v2.1.1.tar.gz && \
-tar xvf v2.1.1.tar.gz && \
-mkdir -p vmaf-2.1.1/libvmaf/build &&\
-cd vmaf-2.1.1/libvmaf/build && \
+wget https://github.com/Netflix/vmaf/archive/refs/tags/v3.0.0.tar.gz && \
+tar xvf v3.0.0.tar.gz && \
+mkdir -p vmaf-3.0.0/libvmaf/build &&\
+cd vmaf-3.0.0/libvmaf/build && \
 meson setup -Denable_tests=false -Denable_docs=false --buildtype=release --default-library=static .. --prefix "$HOME/ffmpeg_build" --libdir="$HOME/ffmpeg_build/lib" && \
 ninja && \
 ninja install
@@ -107,7 +107,7 @@ PATH="$HOME/bin:$PATH" PKG_CONFIG_PATH="$HOME/ffmpeg_build/lib/pkgconfig" ./conf
   --bindir="$HOME/bin" \
   --enable-libmfx --enable-vaapi --enable-opencl --disable-debug --enable-libvorbis --enable-libvpx --enable-libdrm --enable-gpl \
  --cpu=native --enable-libfdk-aac --enable-libx264 --enable-libx265 --enable-openssl --enable-pic --enable-nonfree \
- --enable-libvmaf --enable-libpulse --enable-gpl --enable-libvidstab --enable-libfontconfig --enable-libfreetype \
+ --enable-libvmaf --enable-libdav1d --enable-libpulse --enable-gpl --enable-libvidstab --enable-libfontconfig --enable-libfreetype \
  --enable-libmp3lame --prefix=$HOME/bin && make -j $(nproc) && make install && $HOME/bin/ffmpeg -version
 
 #RUN echo 1 && dpkg -S /usr/lib/x86_64-linux-gnu/libvpx.so.6  | true
